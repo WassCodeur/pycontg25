@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="page active" id="page-schedule">
+
+    <!-- ── HERO ───────────────────────────────────────────────── -->
+    <section class="page-hero">
+        <div class="container">
+            <span class="eyebrow reveal" data-i18n-en="3-Day Program" data-i18n-fr="Programme sur 3 jours">Programme
+                sur 3 jours</span>
+            <h1 class="reveal reveal-d1" data-i18n-html-en="Conference <em>Schedule</em>"
+                data-i18n-html-fr="Le <em>Programme</em>">Le <em>Programme</em></h1>
+            <p class="page-hero-sub reveal reveal-d2"
+                data-i18n-en="Workshops, talks, and community moments across three days."
+                data-i18n-fr="Ateliers, conférences et moments communautaires sur trois jours.">
+                Ateliers, conférences et moments communautaires sur trois jours.
+            </p>
+        </div>
+    </section>
+
+    {% if schedule_days %}
+    <section class="section schedule-section">
+        <div class="container">
+
+            <!-- ── ONGLETS PAR JOUR ───────────────────────────── -->
+            <div class="schedule-day-tabs" id="schedule-day-tabs" role="tablist">
+                {% for day in schedule_days %}
+                <button class="schedule-day-tab{% if loop.first %} active{% endif %}" data-day-index="{{ loop.index0 }}"
+                    role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}"
+                    data-i18n-en="{{ day.label_en }}" data-i18n-fr="{{ day.label_fr }}">{{ day.label_fr }}</button>
+                {% endfor %}
+            </div>
+
+            <!-- ── SESSIONS PAR JOUR ──────────────────────────── -->
+            {% for day in schedule_days %}
+            <div class="schedule-day-panel{% if loop.first %} active{% endif %}" data-day-index="{{ loop.index0 }}">
+                <div class="schedule-list">
+                    {% for session in day.sessions %}
+                    <article class="schedule-item">
+                        <div class="schedule-item-time">{{ session.time_label }}</div>
+                        <div class="schedule-item-body"
+                            {% if session.track and session.track.color %}style="border-left-color: {{ session.track.color }}"{% endif %}>
+                            <div class="schedule-item-header">
+                                <span
+                                    class="schedule-item-type schedule-item-type-{{ session.session_type }}">{{ session.session_type }}</span>
+                                {% if session.track %}
+                                <span class="schedule-item-track"
+                                    {% if session.track.color %}style="color: {{ session.track.color }}"{% endif %}>
+                                    {{ session.track.name_fr or session.track.name_en }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <h3 class="schedule-item-title">{{ session.title }}</h3>
+                            {% if session.description %}
+                            <p class="schedule-item-desc">{{ session.description }}</p>
+                            {% endif %}
+                            <div class="schedule-item-footer">
+                                {% if session.speaker %}
+                                <div class="schedule-item-speaker">
+                                    {% if session.speaker.photo_url %}
+                                    <img src="{{ session.speaker.photo_url }}" alt="{{ session.speaker.full_name }}">
+                                    {% endif %}
+                                    <span>{{ session.speaker.full_name }}</span>
+                                </div>
+                                {% endif %}
+                                {% if session.venue %}
+                                <div class="schedule-item-venue">📍 {{ session.venue.name }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+        </div>
+    </section>
+    {% else %}
+
+    <!-- ── ÉTAT VIDE ──────────────────────────────────────────── -->
+    <section class="section">
+        <div class="container">
+            <div class="schedule-empty reveal">
+                <div class="schedule-empty-icon">🗓️</div>
+                <h2 data-i18n-en="Schedule coming soon" data-i18n-fr="Programme bientôt disponible">Programme
+                    bientôt disponible</h2>
+                <p data-i18n-en="We're finalizing the day-by-day schedule. Check back soon!"
+                    data-i18n-fr="Nous finalisons le programme jour par jour. Revenez bientôt !">
+                    Nous finalisons le programme jour par jour. Revenez bientôt !
+                </p>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+</main>
+
+<script>
+    (function () {
+        var tabs = document.querySelectorAll('.schedule-day-tab');
+        var panels = document.querySelectorAll('.schedule-day-panel');
+
+        tabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                tabs.forEach(function (t) {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                panels.forEach(function (p) { p.classList.remove('active'); });
+
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+
+                var idx = tab.dataset.dayIndex;
+                var panel = document.querySelector('.schedule-day-panel[data-day-index="' + idx + '"]');
+                if (panel) panel.classList.add('active');
+            });
+        });
+    })();
+</script>
+{% endblock %}

@@ -500,6 +500,7 @@ p:last-child {
   color: var(--text-mid);
   transition: all .18s;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .nav-link:hover {

@@ -1,0 +1,166 @@
+/* Schedule / Program */
+
+.schedule-section {
+    padding-top: 40px;
+}
+
+/* ── ONGLETS PAR JOUR ─────────────────────────────────────── */
+.schedule-day-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+    border-bottom: 1px solid #e2ede9;
+    padding-bottom: 16px;
+}
+
+.schedule-day-tab {
+    padding: 10px 22px;
+    border-radius: 24px;
+    border: 1.5px solid #c9dbd5;
+    background: transparent;
+    color: #444;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    font-family: var(--font-sans, 'Inter', sans-serif);
+}
+
+.schedule-day-tab:hover {
+    border-color: var(--primary-color, #056d1e);
+    color: var(--primary-color, #056d1e);
+}
+
+.schedule-day-tab.active {
+    background: var(--primary-color, #056d1e);
+    border-color: var(--primary-color, #056d1e);
+    color: #fff;
+}
+
+/* ── PANNEAUX / LISTE DE SESSIONS ────────────────────────── */
+.schedule-day-panel {
+    display: none;
+}
+
+.schedule-day-panel.active {
+    display: block;
+}
+
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.schedule-item {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.schedule-item-time {
+    font-weight: 700;
+    color: var(--primary-color, #056d1e);
+    font-size: 0.95rem;
+    padding-top: 18px;
+    white-space: nowrap;
+}
+
+.schedule-item-body {
+    background: #fff;
+    border: 1px solid #e2ede9;
+    border-left: 4px solid var(--primary-color, #056d1e);
+    border-radius: 10px;
+    padding: 18px 20px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.schedule-item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.schedule-item-type {
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: #eef4f1;
+    color: #2b3139;
+}
+
+.schedule-item-track {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.schedule-item-title {
+    margin: 0 0 6px;
+    font-size: 1.2rem;
+    line-height: 1.3;
+    color: var(--text-dark, #1d2630);
+}
+
+.schedule-item-desc {
+    margin: 0 0 12px;
+    color: #4a5560;
+    font-size: 0.92rem;
+    line-height: 1.6;
+}
+
+.schedule-item-footer {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.schedule-item-speaker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #2b3139;
+}
+
+.schedule-item-speaker img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.schedule-item-venue {
+    font-size: 0.85rem;
+    color: #667;
+}
+
+/* ── ÉTAT VIDE ────────────────────────────────────────────── */
+.schedule-empty {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.schedule-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+    .schedule-item {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .schedule-item-time {
+        padding-top: 0;
+    }
+}

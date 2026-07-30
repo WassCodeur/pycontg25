@@ -806,6 +806,82 @@ async def _fetch_formats() -> list[dict]:
     return []
 
 
+async def _fetch_sessions() -> list[dict]:
+    event_code = getattr(settings, "python_togo_event_code", None)
+    if not event_code:
+        return []
+
+    headers = {"Authorization": f"Bearer {settings.python_togo_api_key}"}
+    url = _build_api_url(f"/sessions/list/{event_code}")
+
+    try:
+        async with httpx.AsyncClient(timeout=settings.python_togo_api_timeout_seconds) as client:
+            response = await client.get(url, headers=headers)
+        if response.status_code < 400:
+            payload = response.json()
+            # _extract_topics() reshapes rows into a topic schema (name_en/name_fr)
+            # and drops anything without those fields, so it would silently discard
+            # every session. Sessions are already flat dicts from /sessions/list, so
+            # only the generic row-extraction logic (list vs {data:[...]} vs
+            # {items:[...]}) is needed here.
+            return _extract_partner_rows(payload)
+    except Exception:
+        return []
+
+    return []
+
+
+def _format_day_label(value: datetime, lang: str) -> str:
+    weekdays_en = ["Monday", "Tuesday", "Wednesday",
+                   "Thursday", "Friday", "Saturday", "Sunday"]
+    weekdays_fr = ["Lundi", "Mardi", "Mercredi",
+                   "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    months_en = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
+    ]
+    months_fr = [
+        "janvier", "fevrier", "mars", "avril", "mai", "juin",
+        "juillet", "aout", "septembre", "octobre", "novembre", "decembre",
+    ]
+    weekday = (weekdays_fr if lang == "fr" else weekdays_en)[value.weekday()]
+    month = (months_fr if lang == "fr" else months_en)[value.month - 1]
+    if lang == "fr":
+        return f"{weekday} {value.day} {month}"
+    return f"{weekday}, {month} {value.day}"
+
+
+def _group_sessions_by_day(sessions: list[dict]) -> list[dict]:
+    """Group a flat list of sessions into one entry per calendar day, sorted
+    chronologically, each with its own sessions sorted by start time. Kept
+    generic (grouped by actual date) rather than hardcoded to
+    Friday/Saturday/Sunday so it stays correct if the edition's dates shift."""
+    days: dict[str, dict] = {}
+    for session in sessions:
+        starts_at = _parse_date(session.get("starts_at"))
+        if not starts_at:
+            continue
+        day_key = starts_at.date().isoformat()
+        if day_key not in days:
+            days[day_key] = {"date": starts_at, "sessions": []}
+        days[day_key]["sessions"].append(session)
+
+    ordered_days = sorted(days.values(), key=lambda day: day["date"])
+    for day in ordered_days:
+        day["sessions"].sort(key=lambda session: session.get("starts_at") or "")
+        day["label_en"] = _format_day_label(day["date"], "en")
+        day["label_fr"] = _format_day_label(day["date"], "fr")
+        for session in day["sessions"]:
+            session_start = _parse_date(session.get("starts_at"))
+            session_end = _parse_date(session.get("ends_at"))
+            start_label = session_start.strftime("%H:%M") if session_start else ""
+            end_label = session_end.strftime("%H:%M") if session_end else ""
+            session["time_label"] = (
+                f"{start_label} – {end_label}" if start_label and end_label else start_label
+            )
+    return ordered_days
+
+
 async def _fetch_partner_sections() -> dict:
     event_code = getattr(settings, "python_togo_event_code", None)
     grouped = {
@@ -920,6 +996,24 @@ async def _fetch_featured_speakers() -> list[dict]:
     return []
 
 
+async def _fetch_all_speakers() -> list[dict]:
+    """Fetch the full speaker list (not just featured) for the public /speakers page."""
+    event_code = getattr(settings, "python_togo_event_code", None)
+    url = _build_api_url(f"/speakers/list/{event_code}")
+
+    headers = {"Authorization": f"Bearer {settings.python_togo_api_key}"}
+    try:
+        async with httpx.AsyncClient(timeout=settings.python_togo_api_timeout_seconds) as client:
+            response = await client.get(url, headers=headers)
+        if response.status_code < 400:
+            payload = response.json()
+            return _extract_featured_speakers(payload)
+    except Exception:
+        return []
+
+    return []
+
+
 async def _submit_ticket_purchase_to_api(submission: TicketSubmissionPayload, request, discount_code: str | None = None):
     event_code = getattr(settings, "python_togo_event_code", None)
     submission_data = submission.model_dump(mode="json")
@@ -1013,14 +1107,13 @@ async def home(request: Request):
     )
 
 
-@router.get("/speakers")
-async def speakers(request: Request):
+async def call_for_speakers_form(request: Request):
     event_context = await _build_event_context()
     if event_context.get("cfp_status") != "open":
         return render_page(
             request=request,
             name="2026_call_for_speakers_coming_soon.html",
-            active_page="speakers",
+            active_page="call-for-speakers",
             page_css="coming-soon.css",
             page_title="PyCon Togo 2026 - Call for Speakers",
             extra_context=event_context,
@@ -1031,7 +1124,7 @@ async def speakers(request: Request):
     return render_page(
         request=request,
         name="2026_call_for_speakers.html",
-        active_page="speakers",
+        active_page="call-for-speakers",
         page_css="call-for-speakers.css",
         page_title="PyCon Togo 2026 - Call for Speakers",
         extra_context={
@@ -1042,9 +1135,31 @@ async def speakers(request: Request):
     )
 
 
+@router.get("/speakers")
+async def speakers(request: Request):
+    all_speakers = await _fetch_all_speakers()
+    return await _render_page_with_event(
+        request=request,
+        name="2026_speakers.html",
+        active_page="speakers",
+        page_css="speakers.css",
+        page_title="PyCon Togo 2026 — Speakers",
+        extra_context={"speakers": all_speakers},
+    )
+
+
 @router.get("/schedule")
 async def schedule(request: Request):
-    return await home(request)
+    sessions = await _fetch_sessions()
+    schedule_days = _group_sessions_by_day(sessions)
+    return await _render_page_with_event(
+        request=request,
+        name="2026_schedule.html",
+        active_page="schedule",
+        page_css="schedule.css",
+        page_title="PyCon Togo 2026 — Schedule",
+        extra_context={"schedule_days": schedule_days},
+    )
 
 
 @router.get("/venue")
@@ -1352,12 +1467,12 @@ async def sponsors_inquiry(payload: SponsorInquiryPayload):
 
 @router.get("/cfp")
 async def cfp(request: Request):
-    return await speakers(request)
+    return await call_for_speakers_form(request)
 
 
 @router.get("/call-for-speakers")
 async def call_for_speakers(request: Request):
-    return await speakers(request)
+    return await call_for_speakers_form(request)
 
 
 @router.post("/submit-proposal")

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="page active" id="page-speakers">
+
+  <!-- ── HERO ───────────────────────────────────────────────── -->
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow reveal" data-i18n-en="Lineup" data-i18n-fr="Intervenants">Intervenants</span>
+      <h1 class="reveal reveal-d1" data-i18n-html-en="PyCon Togo 2026 <em>Speakers</em>"
+        data-i18n-html-fr="Les <em>Speakers</em> de PyCon Togo 2026">Les <em>Speakers</em> de PyCon Togo 2026</h1>
+      <p class="page-hero-sub reveal reveal-d2"
+        data-i18n-en="Meet international voices and local pioneers joining PyCon Togo 2026."
+        data-i18n-fr="Découvrez les voix internationales et les talents locaux qui rejoignent PyCon Togo 2026.">
+        Découvrez les voix internationales et les talents locaux qui rejoignent PyCon Togo 2026.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── GRILLE DES SPEAKERS ───────────────────────────────────── -->
+  <section class="session speakerfeatured">
+    <div class="container">
+      {% if speakers %}
+      <div class="speakers-grid">
+        {% for speaker in speakers %}
+        <article class="speaker-card" role="button" tabindex="0" data-speaker-name="{{ speaker.full_name|e }}"
+          data-speaker-title="{{ speaker.headline|default('', true)|e }}"
+          data-speaker-company="{{ speaker.organization|default('', true)|e }}"
+          data-speaker-company-logo="{{ speaker.company_logo_url|default('', true)|e }}"
+          data-speaker-photo="{{ speaker.photo_url|default(speaker.image, true)|e }}"
+          data-speaker-bio="{{ speaker.bio|e }}"
+          data-speaker-sessions='{{ speaker.sessions | tojson if speaker.sessions else "[]" }}'>
+          <div class="speaker-card_photo-wrap">
+            <img class="speaker-card_photo" src="{{ speaker.photo_url|default(speaker.image, true) }}"
+              alt="{{ speaker.full_name }}">
+          </div>
+
+          <div class="speaker-card_body">
+            <h3 class="speaker-card_name">{{ speaker.full_name }}</h3>
+
+            {% if speaker.headline %}
+            <p class="speaker-card_title">{{ speaker.headline }}</p>
+            {% endif %}
+
+            <div class="speaker-card_footer">
+              {% if speaker.company_logo_url %}
+              <img class="speaker-card_company-logo" src="{{ speaker.company_logo_url }}"
+                alt="{{ speaker.organization }}">
+              {% endif %}
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="speakers-empty">
+        <p data-i18n-en="Our 2026 lineup will be announced soon. Check back later!"
+          data-i18n-fr="La liste des speakers 2026 sera annoncée bientôt. Revenez plus tard !">
+          La liste des speakers 2026 sera annoncée bientôt. Revenez plus tard !
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <div id="speakerModal" class="speaker-modal" aria-hidden="true">
+    <div class="speaker-modal_backdrop" data-modal-close></div>
+    <div class="speaker-modal_panel" role="dialog" aria-modal="true" aria-labelledby="speakerModalName">
+      <button class="speaker-modal_close" type="button" aria-label="Close speaker details"
+        data-modal-close>&times;</button>
+
+      <div class="speaker-modal_header">
+        <img id="speakerModalPhoto" class="speaker-modal_photo" src="" alt="">
+        <div class="speaker-modal_header-copy">
+          <h3 id="speakerModalName" class="speaker-modal_name"></h3>
+          <p id="speakerModalTitle" class="speaker-modal_title"></p>
+          <div id="speakerModalCompanyBlock" class="speaker-modal_company-block" hidden>
+            <img id="speakerModalCompanyLogo" class="speaker-modal_company-logo" src="" alt="">
+          </div>
+        </div>
+      </div>
+
+      <div class="speaker-modal_body">
+        <p id="speakerModalBio" class="speaker-modal_bio"></p>
+
+        <div id="speakerModalSessionsBlock" class="speaker-modal_sessions" hidden>
+          <h4 class="speaker-modal_sessions-title" data-i18n-en="Conference Sessions"
+            data-i18n-fr="Sessions de la conférence">Conference Sessions</h4>
+          <div id="speakerModalSessionsList" class="speaker-modal_sessions-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  (() => {
+    const modal = document.getElementById('speakerModal');
+    const modalPhoto = document.getElementById('speakerModalPhoto');
+    const modalName = document.getElementById('speakerModalName');
+    const modalTitle = document.getElementById('speakerModalTitle');
+    const modalCompanyBlock = document.getElementById('speakerModalCompanyBlock');
+    const modalCompanyLogo = document.getElementById('speakerModalCompanyLogo');
+    const modalBio = document.getElementById('speakerModalBio');
+    const sessionsBlock = document.getElementById('speakerModalSessionsBlock');
+    const sessionsList = document.getElementById('speakerModalSessionsList');
+    const modalPanel = modal ? modal.querySelector('.speaker-modal_panel') : null;
+
+    if (!modal) return;
+
+    if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+
+    const openModal = (card) => {
+      const sessions = JSON.parse(card.dataset.speakerSessions || '[]');
+
+      modalPhoto.src = card.dataset.speakerPhoto || '';
+      modalPhoto.alt = card.dataset.speakerName || '';
+      modalName.textContent = card.dataset.speakerName || '';
+      modalTitle.textContent = card.dataset.speakerTitle || '';
+
+      const company = card.dataset.speakerCompany || '';
+      const companyLogo = card.dataset.speakerCompanyLogo || '';
+
+      if (companyLogo) {
+        modalCompanyBlock.hidden = false;
+        modalCompanyLogo.src = companyLogo;
+        modalCompanyLogo.alt = company ? `${company} logo` : 'Company logo';
+      } else {
+        modalCompanyBlock.hidden = true;
+        modalCompanyLogo.src = '';
+        modalCompanyLogo.alt = '';
+      }
+
+      modalBio.textContent = card.dataset.speakerBio || '';
+
+      if (sessions.length) {
+        sessionsBlock.hidden = false;
+        sessionsList.innerHTML = sessions.map(session => `
+          <div class="speaker-modal_session-item">
+            <p class="speaker-modal_session-title">${session.title || ''}</p>
+            <p class="speaker-modal_session-meta">${[session.time, session.room].filter(Boolean).join(' • ')}</p>
+          </div>
+        `).join('');
+      } else {
+        sessionsBlock.hidden = true;
+        sessionsList.innerHTML = '';
+      }
+
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      if (modalPanel) {
+        modalPanel.scrollTop = 0;
+      }
+    };
+
+    const closeModal = () => {
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+
+    document.querySelectorAll('.speaker-card').forEach(card => {
+      card.addEventListener('click', () => openModal(card));
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openModal(card);
+        }
+      });
+    });
+
+    modal.addEventListener('click', (event) => {
+      if (event.target.matches('[data-modal-close]')) closeModal();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+    });
+  })();
+</script>
+{% endblock %}
