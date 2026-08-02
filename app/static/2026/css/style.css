@@ -234,7 +234,6 @@ p:last-child {
   align-items: center;
   gap: 8px;
   padding: 12px 26px;
-  border-radius: var(--radius-pill);
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 700;
@@ -293,10 +292,6 @@ p:last-child {
   border-color: var(--green);
 }
 
-
-.btn-cta-sponsor:hover {
-  animation-play-state: paused;
-}
 
 
 
@@ -2969,6 +2964,7 @@ footer::after {
 
   .legacy-trust {
     padding: 62px 0 66px;
+    margin-bottom: 10px;
   }
 
   .legacy-trust-grid {

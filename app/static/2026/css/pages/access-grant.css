@@ -180,7 +180,6 @@
     align-items: flex-start;
     gap: 18px;
     border: 1.5px solid #9ed7b2;
-    border-radius: 16px;
     padding: 24px 28px;
     max-width: 860px;
     margin: 32px auto 0;
@@ -250,9 +249,8 @@
     opacity: .82;
 }
 
-.grant-form.is-locked .form-consent,
-.grant-form.is-locked .grant-status,
-.grant-form.is-locked .grant-closed-banner {
+
+.grant-form.is-locked .form-consent {
     pointer-events: auto;
 }
 
