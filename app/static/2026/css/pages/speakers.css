@@ -109,6 +109,13 @@
   object-fit: contain;
 }
 
+.speaker-card_company {
+  margin: 0;
+  font-size: .85rem;
+  font-weight: 600;
+  color: #2b3139;
+}
+
 .speaker-modal {
   position: fixed;
   inset: 0;

@@ -879,15 +879,13 @@ def _group_sessions_by_day(sessions: list[dict]) -> list[dict]:
 
     ordered_days = sorted(days.values(), key=lambda day: day["date"])
     for day in ordered_days:
-        day["sessions"].sort(
-            key=lambda session: session.get("starts_at") or "")
+        day["sessions"].sort(key=lambda session: session.get("starts_at") or "")
         day["label_en"] = _format_day_label(day["date"], "en")
         day["label_fr"] = _format_day_label(day["date"], "fr")
         for session in day["sessions"]:
             session_start = _parse_date(session.get("starts_at"))
             session_end = _parse_date(session.get("ends_at"))
-            start_label = session_start.strftime(
-                "%H:%M") if session_start else ""
+            start_label = session_start.strftime("%H:%M") if session_start else ""
             end_label = session_end.strftime("%H:%M") if session_end else ""
             session["time_label"] = (
                 f"{start_label} – {end_label}" if start_label and end_label else start_label
