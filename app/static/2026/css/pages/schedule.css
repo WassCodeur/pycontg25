@@ -48,9 +48,18 @@
 }
 
 .schedule-grid {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 16px;
+}
+
+/* One row per time slot -- sessions that start at the same time (parallel
+   tracks in different rooms) sit side by side instead of stacking. */
+.schedule-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    align-items: stretch;
 }
 
 /* ── CARTE SESSION avec ruban horaire ────────────────────── */
@@ -171,14 +180,76 @@
 }
 
 .session-card_venue {
-    font-size: 0.82rem;
-    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-mid);
+}
+
+.session-card_footer-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.session-card_lang {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    background: var(--border);
+    color: var(--text-mid);
 }
 
 .session-card_more {
     font-size: 0.8rem;
     font-weight: 700;
     color: var(--green);
+}
+
+/* ── CARTE "PAUSE" (transitions, repas, lightning talks...) ─────────
+   Repris du style break/compact de l'edition 2025 : ruban jaune plutot
+   que vert, carte plus fine (moins de padding, ruban plus etroit), sur
+   toute la largeur de sa ligne. Pas cliquable (pas de modal, rien a
+   detailler) donc pas d'effet hover ni de curseur pointeur. */
+.session-card--break {
+    grid-template-columns: 48px minmax(0, 1fr);
+    box-shadow: none;
+    border-style: dashed;
+    border-color: var(--gold);
+    cursor: default;
+}
+
+.session-card--break:hover,
+.session-card--break:focus-visible {
+    transform: none;
+    border-color: var(--gold);
+    box-shadow: none;
+    outline: none;
+}
+
+.session-card--break .session-card_ribbon {
+    background: linear-gradient(180deg, var(--gold) 0%, var(--gold-light) 100%);
+}
+
+.session-card--break .session-card_ribbon-time {
+    color: #4a3b00;
+    font-size: 0.68rem;
+}
+
+.session-card--break .session-card_body {
+    padding: 10px 16px;
+    gap: 2px;
+    justify-content: center;
+}
+
+.session-card--break .session-card_type {
+    background: var(--gold-pale);
+    color: #7a5d00;
+}
+
+.session-card--break .session-card_title {
+    font-size: 1.15rem;
 }
 
 /* ── MODAL DÉTAIL SESSION (même famille visuelle que le modal speaker) ── */

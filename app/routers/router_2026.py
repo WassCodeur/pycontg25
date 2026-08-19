@@ -2,6 +2,8 @@
 from typing import Any, Literal
 import hashlib
 import json
+import re
+import unicodedata
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
@@ -842,6 +844,42 @@ async def _fetch_sessions() -> list[dict]:
     return []
 
 
+_LANGUAGE_STOPWORDS_EN = {
+    "the", "and", "is", "are", "will", "this", "that", "with", "for", "your",
+    "you", "from", "to", "of", "in", "on", "at", "how", "why", "what", "when",
+    "who", "which", "was", "were", "have", "has", "been", "not", "but", "as",
+    "by", "an", "it", "its", "their", "our", "we", "can", "so", "more",
+    "than", "into", "about", "building", "using",
+}
+_LANGUAGE_STOPWORDS_FR = {
+    "le", "la", "les", "des", "est", "ce", "cette", "cet", "vous", "votre",
+    "avec", "pour", "une", "un", "de", "du", "dans", "sur", "au", "aux",
+    "que", "qui", "quoi", "comment", "pourquoi", "quand", "son", "sa", "ses",
+    "leur", "nos", "notre", "nous", "pas", "mais", "ou", "par", "sont",
+    "etre", "avoir", "peut", "si", "plus", "tout", "tous", "toute", "toutes",
+}
+
+
+def _detect_language(text: str) -> str:
+    """Best-effort FR/EN guess for a session's language, since talks are
+    given in whichever language the speaker submitted (no translation) and
+    there's no dedicated language field in the DB. Counts common short
+    function words rather than doing full text matching, since those are
+    the words tech-vocabulary-heavy titles/descriptions still reliably
+    contain regardless of subject matter (e.g. "Python", "API" are neutral)."""
+    words = re.findall(r"[a-zA-Z]+", strip_accents((text or "")).lower())
+    en_score = sum(1 for word in words if word in _LANGUAGE_STOPWORDS_EN)
+    fr_score = sum(1 for word in words if word in _LANGUAGE_STOPWORDS_FR)
+    if fr_score > en_score:
+        return "fr"
+    return "en"
+
+
+def strip_accents(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in normalized if not unicodedata.combining(c))
+
+
 def _format_day_label(value: datetime, lang: str) -> str:
     weekdays_en = ["Monday", "Tuesday", "Wednesday",
                    "Thursday", "Friday", "Saturday", "Sunday"]
@@ -890,6 +928,21 @@ def _group_sessions_by_day(sessions: list[dict]) -> list[dict]:
             session["time_label"] = (
                 f"{start_label} – {end_label}" if start_label and end_label else start_label
             )
+            session["language"] = _detect_language(
+                session.get("description") or session.get("title") or "")
+
+        # Sessions starting at the same time run in parallel (different
+        # rooms) -- group them into slots so the template can lay each slot
+        # out as one row instead of stacking every session in one column.
+        slots: dict[str, dict] = {}
+        for session in day["sessions"]:
+            slot_key = session.get("starts_at") or session["time_label"]
+            if slot_key not in slots:
+                slots[slot_key] = {
+                    "time_label": session["time_label"], "sessions": []}
+            slots[slot_key]["sessions"].append(session)
+        day["time_slots"] = sorted(
+            slots.values(), key=lambda slot: slot["sessions"][0].get("starts_at") or "")
     return ordered_days
 
 

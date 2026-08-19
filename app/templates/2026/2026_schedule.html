@@ -35,8 +35,11 @@
             {% for day in schedule_days %}
             <div class="schedule-day-panel{% if loop.first %} active{% endif %}" data-day-index="{{ loop.index0 }}">
                 <div class="schedule-grid">
-                    {% for session in day.sessions %}
-                    <article class="session-card" role="button" tabindex="0"
+                    {% for slot in day.time_slots %}
+                    <div class="schedule-row">
+                    {% for session in slot.sessions %}
+                    <article class="session-card{% if session.session_type == 'lightning' %} session-card--break{% endif %}"
+                        {% if session.session_type != 'lightning' %}role="button" tabindex="0"{% endif %}
                         data-session-title="{{ session.title|e }}"
                         data-session-time="{{ session.time_label|e }}"
                         data-session-type="{{ session.session_type|e }}"
@@ -53,6 +56,7 @@
                             <span class="session-card_ribbon-time">{{ session.time_label | replace(" – ", "<br>–<br>") | safe }}</span>
                         </div>
                         <div class="session-card_body">
+                            {% if session.session_type != 'lightning' %}
                             <div class="session-card_header">
                                 <span class="session-card_type session-card_type-{{ session.session_type }}">{{ session.session_type }}</span>
                                 {% if session.track %}
@@ -62,6 +66,7 @@
                                 </span>
                                 {% endif %}
                             </div>
+                            {% endif %}
                             <h3 class="session-card_title">{{ session.title }}</h3>
                             {% if session.speaker %}
                             <div class="session-card_speaker">
@@ -76,14 +81,21 @@
                                 <span>{{ session.speaker.full_name }}</span>
                             </div>
                             {% endif %}
+                            {% if session.session_type != 'lightning' %}
                             <div class="session-card_footer">
                                 {% if session.venue %}
-                                <span class="session-card_venue">📍 {{ session.venue.name }}</span>
+                                <span class="session-card_venue">{{ session.venue.name }}</span>
                                 {% endif %}
-                                <span class="session-card_more" data-i18n-en="Details →" data-i18n-fr="Détails →">Détails →</span>
+                                <span class="session-card_footer-right">
+                                    <span class="session-card_lang session-card_lang-{{ session.language }}">{{ 'Français' if session.language == 'fr' else 'English' }}</span>
+                                    <span class="session-card_more" data-i18n-en="Details →" data-i18n-fr="Détails →">Détails →</span>
+                                </span>
                             </div>
+                            {% endif %}
                         </div>
                     </article>
+                    {% endfor %}
+                    </div>
                     {% endfor %}
                 </div>
             </div>
@@ -202,7 +214,7 @@
 
             modalTitle.textContent = card.dataset.sessionTitle || '';
             modalTime.textContent = card.dataset.sessionTime || '';
-            modalVenue.textContent = card.dataset.sessionVenue ? ('📍 ' + card.dataset.sessionVenue) : '';
+            modalVenue.textContent = card.dataset.sessionVenue || '';
             modalDescription.textContent = card.dataset.sessionDescription || '';
 
             const name = card.dataset.sessionSpeakerName || '';
@@ -236,7 +248,7 @@
             document.body.style.overflow = '';
         };
 
-        document.querySelectorAll('.session-card').forEach(card => {
+        document.querySelectorAll('.session-card:not(.session-card--break)').forEach(card => {
             card.addEventListener('click', () => openModal(card));
             card.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
